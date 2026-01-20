@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Petrol Pump Ledger</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #1f4fd8;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 15px;
+      color: #555;
+    }
+
+    section {
+      background: #ffffff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 9px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #1f4fd8;
+    }
+
+    button {
+      background: #1f4fd8;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #163bb0;
+    }
+
+    .flex {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .flex>* {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #fff;
+    }
+
+    th {
+      background: #e9efff;
+      border: 1px solid #bbb;
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    td {
+      border: 1px solid #ccc;
+      padding: 7px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    tbody tr:hover {
+      background: #f5f8ff;
+    }
+
+    .action-btn {
+      padding: 4px 7px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .edit {
+      background: #f0ad4e;
+      color: #000;
+    }
+
+    .delete {
+      background: #d9534f;
+    }
+
+    .warning {
+      color: #d9534f;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 768px) {
+      .flex {
+        flex-direction: column;
+      }
+    }
+
+    @media print {
+
+      section,
+      button,
+      input,
+      select,
+      .action-btn {
+        display: none;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th,
+      td {
+        border: 1px solid #000;
+      }
+    }
+  </style>
+
+</head>
+
+<body>
+  <h1>Petrol Pump Ledger</h1>
+
+  <section>
+    <h2>Add Customer</h2>
+    <input id="customerName" placeholder="Customer Name">
+    <p id="customerWarning" class="warning"></p>
+    <button onclick="addCustomer()">Add Customer</button>
+    <div class="flex" style="margin-top:10px">
+      <button onclick="renameCustomer()" style="background:#f0ad4e;color:#000">
+        Rename Customer
+      </button>
+
+      <button onclick="deleteCustomer()" style="background:#d9534f">
+        Delete Customer
+      </button>
+    </div>
+
+    <select id="customerSelect" onchange="showLedger()">
+      <option value="">Select Customer</option>
+    </select>
+  </section>
+  <section>
+    <hr style="margin:15px 0">
+
+    <h3 style="text-align:center">Upload Ledger JSON</h3>
+
+    <input type="file" id="jsonUpload" accept=".json">
+    <button onclick="uploadJSON()">Upload & Append to Selected Party</button>
+  </section>
+  <section>
+    <h2>Fuel Sale</h2>
+    <div class="flex">
+      <input type="date" id="saleDate">
+      <input type="number" id="dieselLiters" placeholder="Diesel Liters">
+      <input type="number" id="dieselRate" placeholder="Diesel Rate/Liter">
+      <input type="number" id="petrolLiters" placeholder="Petrol Liters">
+      <input type="number" id="petrolRate" placeholder="Petrol Rate/Liter">
+      <button id="saleBtn" onclick="addFuelSale()">Add Sale</button>
+    </div>
+    <p id="saleWarning" class="warning"></p>
+  </section>
+
+  <section>
+    <h2>Payment / Loan</h2>
+    <div class="flex">
+      <input type="date" id="paymentDate">
+      <input type="number" id="paymentAmount" placeholder="Amount">
+      <select id="paymentType">
+        <option value="PaymentReceived">Payment Received</option>
+        <option value="LoanGiven">Loan Given</option>
+        <option value="LoanTaken">Loan Taken</option>
+      </select>
+      <button id="payBtn" onclick="addPayment()">Add Payment</button>
+    </div>
+    <p id="paymentWarning" class="warning"></p>
+  </section>
+
+  <section>
+    <h2>Customer Ledger</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Particulars</th>
+          <th>Dr</th>
+          <th>Cr</th>
+          <th>Balance</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="ledgerTable"></tbody>
+    </table>
+    <button onclick="printLedger()">Print Ledger</button>
+  </section>
+  <div class="flex" style="margin-bottom:10px">
+    <button onclick="clearLedger()" style="background:#dc3545">
+      Clear Ledger
+    </button>
+
+    <button onclick="downloadJSON()" style="background:#28a745">
+      Download JSON
+    </button>
+  </div>
+
+  <p id="ledgerWarning" class="warning"></p>
+
+  <script>
+    let customers = JSON.parse(localStorage.getItem("customers") || "[]");
+    let ledgers = JSON.parse(localStorage.getItem("ledgers") || "{}");
+    // 🔧 FIX: normalize old object-based customers to string
+    customers = customers.map(c => {
+      if (typeof c === "string") return c;
+      if (typeof c === "object" && c.name) return c.name;
+      return String(c);
+    });
+
+
+    let editIndex = -1, editCustomer = "";
+
+    function saveData() { localStorage.setItem("customers", JSON.stringify(customers)); localStorage.setItem("ledgers", JSON.stringify(ledgers)); }
+    function fmt(n) { return Number(n || 0).toFixed(2); }
+
+    function updateCustomerDropdown() {
+      let s = document.getElementById("customerSelect");
+      s.innerHTML = '<option value="">Select Customer</option>';
+      customers.forEach(c => {
+        let o = document.createElement("option");
+        o.value = o.textContent = c;
+        s.appendChild(o);
+      });
+    }
+
+    function addCustomer() {
+      let n = document.getElementById("customerName").value.trim();
+      if (!n) return;
+      if (!customers.includes(n)) customers.push(n);
+      if (!ledgers[n]) ledgers[n] = [];
+      saveData(); updateCustomerDropdown(); document.getElementById("customerName").value = "";
+    }
+
+    function addFuelSale() {
+      let c = document.getElementById("customerSelect").value;
+      if (!c) return;
+      let d = document.getElementById("saleDate").value;
+      let dl = +document.getElementById("dieselLiters").value || 0, dr = +document.getElementById("dieselRate").value || 0;
+      let pl = +document.getElementById("petrolLiters").value || 0, pr = +document.getElementById("petrolRate").value || 0;
+      if (!d || (!dl && !pl)) return document.getElementById("saleWarning").textContent = "Invalid sale";
+      let amt = 0, p = [];
+      if (dl && dr) { p.push(`Diesel ${dl}L`); amt += dl * dr; }
+      if (pl && pr) { p.push(`Petrol ${pl}L`); amt += pl * pr; }
+      let obj = { date: d, particulars: p.join(" & "), dr: amt, cr: 0 };
+
+      if (editIndex > -1) { // Update existing
+        ledgers[editCustomer][editIndex] = obj;
+      } else ledgers[c].push(obj);
+
+      resetEdit(); saveData(); showLedger();
+      document.getElementById("saleDate").value = document.getElementById("dieselLiters").value = document.getElementById("dieselRate").value = document.getElementById("petrolLiters").value = document.getElementById("petrolRate").value = "";
+    }
+
+    function addPayment() {
+      let c = document.getElementById("customerSelect").value;
+      if (!c) return;
+      let d = document.getElementById("paymentDate").value, a = +document.getElementById("paymentAmount").value;
+      let t = document.getElementById("paymentType").value;
+      if (!d || !a) return document.getElementById("paymentWarning").textContent = "Invalid payment";
+      let dr = 0, cr = 0;
+      if (t === "LoanTaken") dr = a; else cr = a;
+      let obj = { date: d, particulars: t.replace(/([A-Z])/g, " $1"), dr, cr };
+
+      if (editIndex > -1) { // Update existing
+        ledgers[editCustomer][editIndex] = obj;
+      } else ledgers[c].push(obj);
+
+      resetEdit(); saveData(); showLedger();
+      document.getElementById("paymentDate").value = document.getElementById("paymentAmount").value = "";
+    }
+
+    function editEntry(c, i) {
+      let e = ledgers[c][i];
+      editIndex = i; editCustomer = c;
+      document.getElementById("customerSelect").value = c;
+      if (e.cr) {
+        document.getElementById("paymentDate").value = e.date;
+        document.getElementById("paymentAmount").value = e.cr;
+        document.getElementById("paymentType").value = "PaymentReceived";
+        document.getElementById("payBtn").textContent = "Update Payment";
+      } else {
+        document.getElementById("saleDate").value = e.date;
+        document.getElementById("dieselLiters").value = "";
+        document.getElementById("dieselRate").value = "";
+        document.getElementById("petrolLiters").value = "";
+        document.getElementById("petrolRate").value = "";
+        document.getElementById("saleBtn").textContent = "Update Sale";
+      }
+    }
+
+    function resetEdit() {
+      editIndex = -1; editCustomer = "";
+      document.getElementById("saleBtn").textContent = "Add Sale";
+      document.getElementById("payBtn").textContent = "Add Payment";
+    }
+
+    function deleteEntry(c, i) {
+      if (confirm("Are you sure?")) { ledgers[c].splice(i, 1); saveData(); showLedger(); }
+    }
+
+    function showLedger() {
+      let c = document.getElementById("customerSelect").value;
+      let tbody = document.getElementById("ledgerTable");
+      tbody.innerHTML = "";
+      if (!c || !ledgers[c]) return;
+      let bal = 0, td = 0, tc = 0;
+      ledgers[c].forEach((e, i) => {
+        bal += e.dr - e.cr; td += e.dr; tc += e.cr;
+        tbody.innerHTML += `
+<tr>
+<td>${e.date}</td>
+<td>${e.particulars}</td>
+<td>${e.dr ? fmt(e.dr) : ""}</td>
+<td>${e.cr ? fmt(e.cr) : ""}</td>
+<td>${fmt(bal)}</td>
+<td>
+<span class="action-btn edit" onclick="editEntry('${c}',${i})">Edit</span>
+<span class="action-btn delete" onclick="deleteEntry('${c}',${i})">Delete</span>
+</td>
+</tr>`;
+      });
+      tbody.innerHTML += `<tr><th colspan="2">Total</th><th>${fmt(td)}</th><th>${fmt(tc)}</th><th></th><th></th></tr>`;
+    }
+
+    function printLedger() {
+      let customer = document.getElementById("customerSelect").value;
+      if (!customer) return;
+
+      let w = window.open("", "", "width=900,height=600");
+
+      let totalDr = 0, totalCr = 0, balance = 0;
+
+      let rows = "";
+      ledgers[customer].forEach(e => {
+        balance += e.dr - e.cr;
+        totalDr += e.dr;
+        totalCr += e.cr;
+
+        rows += `
+      <tr>
+        <td>${e.date}</td>
+        <td>${e.particulars}</td>
+        <td>${e.dr ? fmt(e.dr) : "-"}</td>
+        <td>${e.cr ? fmt(e.cr) : "-"}</td>
+        <td>${fmt(balance)}</td>
+      </tr>`;
+      });
+
+      w.document.write(`
+  <html>
+  <head>
+    <title>Ledger</title>
+    <style>
+      body{font-family:Arial;padding:20px}
+      h2,h3{text-align:center;margin:4px 0}
+      table{width:100%;border-collapse:collapse;margin-top:15px}
+      th,td{border:1px solid #000;padding:8px;text-align:center}
+      th{background:#eee}
+      .total-row th{font-weight:bold;background:#ddd}
+    </style>
+  </head>
+  <body>
+
+    <h2>Everest Fiber Cement Board Ledger</h2>
+    <h3><b>${customer}</b></h3>
+
+    <table>
+      <tr>
+        <th>Date</th>
+        <th>Particulars</th>
+        <th>Dr</th>
+        <th>Cr</th>
+        <th>Balance</th>
+      </tr>
+
+      ${rows}
+
+      <tr class="total-row">
+        <th colspan="2">TOTAL</th>
+        <th>${fmt(totalDr)}</th>
+        <th>${fmt(totalCr)}</th>
+        <th></th>
+      </tr>
+    </table>
+
+  </body>
+  </html>
+  `);
+
+      w.document.close();
+      w.print();
+    }
+    updateCustomerDropdown();
+    showLedger();
+    function uploadJSON() {
+      const party = document.getElementById("customerSelect").value;
+      const fileInput = document.getElementById("jsonUpload");
+
+      if (!party) {
+        alert("Please select a Party first");
+        return;
+      }
+
+      if (!fileInput.files.length) {
+        alert("Please select a JSON file");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = JSON.parse(e.target.result);
+
+          if (!Array.isArray(data)) {
+            alert("JSON must be an array of ledger entries");
+            return;
+          }
+
+          if (!ledgers[party]) ledgers[party] = [];
+
+          data.forEach(entry => {
+            if (
+              entry.date &&
+              entry.particulars &&
+              typeof entry.dr === "number" &&
+              typeof entry.cr === "number"
+            ) {
+              ledgers[party].push({
+                date: entry.date,
+                particulars: entry.particulars,
+                dr: entry.dr,
+                cr: entry.cr
+              });
+            }
+          });
+
+          saveData();
+          showLedger();
+
+          alert("JSON appended successfully to " + party + " ✅");
+          fileInput.value = "";
+
+        } catch (err) {
+          alert("Invalid JSON file ❌");
+        }
+      };
+
+      reader.readAsText(fileInput.files[0]);
+    }
+    function clearLedger() {
+      const party = document.getElementById("customerSelect").value;
+      const warn = document.getElementById("ledgerWarning");
+
+      warn.textContent = "";
+
+      if (!party) {
+        warn.textContent = "Please select a party first";
+        return;
+      }
+
+      if (!confirm("Clear all entries for selected party?")) return;
+
+      ledgers[party] = [];
+      saveData();
+      showLedger();
+
+      warn.textContent = "Ledger cleared successfully ✅";
+    }
+    function downloadJSON() {
+      const party = document.getElementById("customerSelect").value;
+      const warn = document.getElementById("ledgerWarning");
+
+      warn.textContent = "";
+
+      if (!party) {
+        warn.textContent = "Please select a party to download";
+        return;
+      }
+
+      const data = ledgers[party];
+
+      if (!data || !data.length) {
+        warn.textContent = "No ledger data to download";
+        return;
+      }
+
+      const blob = new Blob(
+        [JSON.stringify(data, null, 2)],
+        { type: "application/json" }
+      );
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = party.replace(/\s+/g, "_") + "_ledger.json";
+      a.click();
+
+      URL.revokeObjectURL(url);
+    }
+
+    function renameCustomer() {
+      const oldName = document.getElementById("customerSelect").value;
+      const input = document.getElementById("customerName");
+      const warn = document.getElementById("customerWarning");
+
+      warn.textContent = "";
+
+      if (!oldName) {
+        warn.textContent = "Select a customer first";
+        return;
+      }
+
+      const newName = input.value.trim();
+      if (!newName) {
+        warn.textContent = "Enter new customer name";
+        return;
+      }
+
+      if (customers.includes(newName)) {
+        warn.textContent = "Customer already exists";
+        return;
+      }
+
+      // rename in customer list
+      customers = customers.map(c => c === oldName ? newName : c);
+
+      // move ledger safely
+      ledgers[newName] = ledgers[oldName];
+      delete ledgers[oldName];
+
+      saveData();
+      updateCustomerDropdown();
+
+      document.getElementById("customerSelect").value = newName;
+      showLedger();
+
+      input.value = "";
+      warn.textContent = "Customer renamed successfully ✅";
+    }
+    function deleteCustomer() {
+      const customer = document.getElementById("customerSelect").value;
+      const warn = document.getElementById("customerWarning");
+
+      warn.textContent = "";
+
+      if (!customer) {
+        warn.textContent = "Select a customer first";
+        return;
+      }
+
+      if (!confirm(`Delete "${customer}" and all ledger data?`)) return;
+
+      customers = customers.filter(c => c !== customer);
+      delete ledgers[customer];
+
+      saveData();
+      updateCustomerDropdown();
+
+      document.getElementById("customerSelect").value = "";
+      document.getElementById("ledgerTable").innerHTML = "";
+
+      warn.textContent = "Customer deleted successfully ✅";
+    }
+
+  </script>
+</body>
+
+</html>
